@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import type { Quiz, Question } from "@/types/database";
 
 const Index = () => {
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const { user, signIn, signOut } = useAuth();
   const { toast } = useToast();
 
-  const { data: quizzes, isLoading } = useQuery({
+  const { data: quizzes, isLoading: isLoadingQuizzes } = useQuery({
     queryKey: ['quizzes'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -23,11 +25,26 @@ const Index = () => {
         .eq('is_active', true);
       
       if (error) throw error;
-      return data;
+      return data as Quiz[];
     },
   });
 
-  const handleStartQuiz = () => {
+  const { data: questions, isLoading: isLoadingQuestions } = useQuery({
+    queryKey: ['questions', selectedQuizId],
+    queryFn: async () => {
+      if (!selectedQuizId) return null;
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('quiz_id', selectedQuizId);
+      
+      if (error) throw error;
+      return data as Question[];
+    },
+    enabled: !!selectedQuizId,
+  });
+
+  const handleStartQuiz = (quizId: string) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -37,6 +54,7 @@ const Index = () => {
       return;
     }
     
+    setSelectedQuizId(quizId);
     setIsQuizStarted(true);
     toast({
       title: "Quiz Started!",
@@ -45,14 +63,46 @@ const Index = () => {
   };
 
   const handleAnswer = async (optionId: string) => {
-    // Implementation for handling answers will be added later
-    toast({
-      title: "Answer recorded!",
-      description: "Moving to the next question...",
-    });
+    if (!questions || !selectedQuizId) return;
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const isCorrect = parseInt(optionId) === currentQuestion.correct_option;
+
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setTimeLeft(30);
+    } else {
+      // Quiz completed
+      const { error } = await supabase
+        .from('user_quiz_attempts')
+        .insert({
+          user_id: user?.id,
+          quiz_id: selectedQuizId,
+          score: isCorrect ? 1 : 0,
+          earned_amount: isCorrect ? (quizzes?.find(q => q.id === selectedQuizId)?.reward_amount || 0) : 0,
+        });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to save quiz results",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsQuizStarted(false);
+      setCurrentQuestionIndex(0);
+      setSelectedQuizId(null);
+      
+      toast({
+        title: "Quiz Completed!",
+        description: isCorrect ? "Congratulations! Your reward has been added to your wallet." : "Better luck next time!",
+      });
+    }
   };
 
-  if (isLoading) {
+  if (isLoadingQuizzes) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
@@ -84,23 +134,20 @@ const Index = () => {
                   description={quiz.description}
                   reward={`₹${quiz.reward_amount}`}
                   timeLimit={`${quiz.time_limit} mins`}
-                  onStart={handleStartQuiz}
+                  onStart={() => handleStartQuiz(quiz.id)}
                 />
               ))}
             </div>
           ) : (
-            <QuizQuestion
-              question="What is the capital of France?"
-              options={[
-                { id: "a", text: "London" },
-                { id: "b", text: "Berlin" },
-                { id: "c", text: "Paris" },
-                { id: "d", text: "Madrid" },
-              ]}
-              timeLeft={timeLeft}
-              totalTime={30}
-              onAnswer={handleAnswer}
-            />
+            questions && questions[currentQuestionIndex] && (
+              <QuizQuestion
+                question={questions[currentQuestionIndex].text}
+                options={questions[currentQuestionIndex].options}
+                timeLeft={timeLeft}
+                totalTime={30}
+                onAnswer={handleAnswer}
+              />
+            )
           )}
         </div>
       </div>

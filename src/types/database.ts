@@ -21,7 +21,10 @@ export interface Question {
   id: string;
   quiz_id: string;
   text: string;
-  options: string[];
+  options: {
+    id: string;
+    text: string;
+  }[];
   correct_option: number;
   created_at: string;
 }
