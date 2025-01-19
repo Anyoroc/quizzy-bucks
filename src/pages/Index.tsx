@@ -5,8 +5,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import type { Quiz, Question } from "@/types/database";
+
+// ... keep existing code (component definition and state)
 
 const Index = () => {
   const [isQuizStarted, setIsQuizStarted] = useState(false);
