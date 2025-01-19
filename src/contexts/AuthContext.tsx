@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   const createUserProfile = async (user: User) => {
-    const { error } = await supabase.from('users').insert({
+    const { error } = await supabase.from('profiles').insert({
       id: user.id,
       email: user.email,
       name: user.user_metadata.full_name || user.email?.split('@')[0],
