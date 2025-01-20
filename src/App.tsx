@@ -7,6 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Game from "./pages/Game";
+import Admin from "./pages/Admin";
+import AdminQuizzes from "./pages/AdminQuizzes";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Game />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/quizzes"
+              element={
+                <ProtectedRoute>
+                  <AdminQuizzes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

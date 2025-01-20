@@ -4,10 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { QuizCard } from "@/components/QuizCard";
 import { Button } from "@/components/ui/button";
-import { LogOut, Wallet } from "lucide-react";
+import { LogOut, Wallet, User } from "lucide-react";
 import type { Quiz } from "@/types/database";
+import { useNavigate } from "react-router-dom";
 
 const Game = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [walletBalance, setWalletBalance] = useState(0);
 
@@ -21,6 +23,19 @@ const Game = () => {
       
       if (error) throw error;
       return data as Quiz[];
+    },
+  });
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ['isAdmin'],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      return !!adminUser;
     },
   });
 
@@ -54,6 +69,23 @@ const Game = () => {
               <Wallet className="text-quiz-primary" />
               <span className="font-bold text-quiz-text">₹{walletBalance}</span>
             </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate("/profile")}
+            >
+              <User size={16} />
+              Profile
+            </Button>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => navigate("/admin")}
+              >
+                Admin
+              </Button>
+            )}
             <Button onClick={signOut} variant="outline" className="gap-2">
               <LogOut size={16} />
               Sign Out
