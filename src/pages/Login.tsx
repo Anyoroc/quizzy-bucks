@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
+import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
-  const { user, signIn } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,17 +20,26 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-quiz-text mb-2">Welcome to Quizzy Bucks</h1>
-          <p className="text-gray-600">Sign in to start earning rewards!</p>
+          <p className="text-gray-600 mb-8">Sign in to start earning rewards!</p>
         </div>
         
-        <div className="mt-8">
-          <Button
-            onClick={signIn}
-            className="w-full bg-quiz-primary hover:bg-quiz-secondary text-white"
-          >
-            <LogIn className="mr-2" />
-            Sign in with Google
-          </Button>
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <Auth
+            supabaseClient={supabase}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#2563eb',
+                    brandAccent: '#1d4ed8',
+                  },
+                },
+              },
+            }}
+            providers={["google"]}
+            redirectTo={window.location.origin}
+          />
         </div>
       </div>
     </div>
