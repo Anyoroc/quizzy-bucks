@@ -15,6 +15,8 @@ export interface Quiz {
   time_limit: number;
   created_at: string;
   is_active: boolean;
+  question_count: number;
+  category: string;
 }
 
 export interface Question {
@@ -36,4 +38,6 @@ export interface UserQuizAttempt {
   score: number;
   earned_amount: number;
   completed_at: string;
+  total_questions: number;
+  correct_answers: number;
 }

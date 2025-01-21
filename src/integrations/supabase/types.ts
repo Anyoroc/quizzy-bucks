@@ -88,28 +88,34 @@ export type Database = {
       }
       quizzes: {
         Row: {
+          category: string
           created_at: string
           description: string
           id: string
           is_active: boolean
+          question_count: number
           reward_amount: number
           time_limit: number
           title: string
         }
         Insert: {
+          category?: string
           created_at?: string
           description: string
           id?: string
           is_active?: boolean
+          question_count?: number
           reward_amount?: number
           time_limit?: number
           title: string
         }
         Update: {
+          category?: string
           created_at?: string
           description?: string
           id?: string
           is_active?: boolean
+          question_count?: number
           reward_amount?: number
           time_limit?: number
           title?: string
@@ -119,26 +125,32 @@ export type Database = {
       user_quiz_attempts: {
         Row: {
           completed_at: string
+          correct_answers: number
           earned_amount: number
           id: string
           quiz_id: string
           score: number
+          total_questions: number
           user_id: string
         }
         Insert: {
           completed_at?: string
+          correct_answers?: number
           earned_amount?: number
           id?: string
           quiz_id: string
           score?: number
+          total_questions?: number
           user_id: string
         }
         Update: {
           completed_at?: string
+          correct_answers?: number
           earned_amount?: number
           id?: string
           quiz_id?: string
           score?: number
+          total_questions?: number
           user_id?: string
         }
         Relationships: [
