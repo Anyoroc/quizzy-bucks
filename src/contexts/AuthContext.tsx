@@ -54,6 +54,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const setupAuth = async () => {
       try {
+        // Set session persistence to 'none' to ensure users are logged out when closing the browser
+        await supabase.auth.initialize({
+          persistSession: false
+        });
+        
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setUser(session.user);
