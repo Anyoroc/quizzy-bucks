@@ -1,16 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Timer, Trophy } from "lucide-react";
+import { Timer, Trophy, BookOpen } from "lucide-react";
 
 interface QuizCardProps {
   title: string;
   description: string;
   reward: string;
   timeLimit: string;
+  category: string;  // Added this prop
   onStart: () => void;
 }
 
-export function QuizCard({ title, description, reward, timeLimit, onStart }: QuizCardProps) {
+export function QuizCard({ title, description, reward, timeLimit, category, onStart }: QuizCardProps) {
   return (
     <Card className="w-full max-w-md bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 animate-fade-in">
       <CardHeader className="space-y-1">
@@ -27,6 +28,10 @@ export function QuizCard({ title, description, reward, timeLimit, onStart }: Qui
             <Timer size={16} className="text-quiz-secondary" />
             <span>{timeLimit}</span>
           </div>
+        </div>
+        <div className="flex items-center gap-1 text-sm text-gray-500">
+          <BookOpen size={16} className="text-quiz-primary" />
+          <span>Category: {category}</span>
         </div>
         <Button 
           onClick={onStart}
