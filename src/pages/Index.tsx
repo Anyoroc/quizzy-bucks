@@ -8,8 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Quiz, Question } from "@/types/database";
 
-// ... keep existing code (component definition and state)
-
 const Index = () => {
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -136,6 +134,7 @@ const Index = () => {
                   description={quiz.description}
                   reward={`₹${quiz.reward_amount}`}
                   timeLimit={`${quiz.time_limit} mins`}
+                  category={quiz.category}
                   onStart={() => handleStartQuiz(quiz.id)}
                 />
               ))}
