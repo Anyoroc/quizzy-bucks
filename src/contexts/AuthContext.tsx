@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+
+// 15 minutes of inactivity before auto logout
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
 interface AuthContextType {
   user: User | null;
@@ -16,6 +20,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  let inactivityTimer: NodeJS.Timeout;
+
+  const resetInactivityTimer = () => {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+    if (user) {
+      inactivityTimer = setTimeout(signOut, INACTIVITY_TIMEOUT);
+    }
+  };
 
   const createUserProfile = async (user: User) => {
     const { error } = await supabase.from('profiles').insert({
@@ -35,10 +50,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    // Set up activity listeners
+    const events = ['mousedown', 'keydown', 'touchstart', 'mousemove'];
+    events.forEach(event => {
+      document.addEventListener(event, resetInactivityTimer);
+    });
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
         createUserProfile(session.user);
+        resetInactivityTimer();
       }
       setLoading(false);
     });
@@ -47,13 +69,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user) {
         setUser(session.user);
         await createUserProfile(session.user);
+        resetInactivityTimer();
       } else {
         setUser(null);
+        if (inactivityTimer) {
+          clearTimeout(inactivityTimer);
+        }
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer);
+      });
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async () => {
@@ -74,9 +108,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear any stored session data
+      await supabase.auth.clearSession();
+      
+      // Show toast notification
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out",
+      });
+      
+      // Navigate to login page
+      navigate('/login');
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to sign out",

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,27 +7,24 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  useEffect(() => {
+    if (user) {
+      navigate("/play");
+    }
+  }, [user, navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-quiz-background to-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Header with Login/Play Button */}
+        {/* Header with Login Button */}
         <header className="flex justify-between items-center mb-12">
           <h1 className="text-3xl font-bold text-quiz-text">Quizzy Bucks</h1>
-          {user ? (
-            <Button 
-              onClick={() => navigate("/play")}
-              className="bg-quiz-primary hover:bg-quiz-primary/90 text-white"
-            >
-              Play Now
-            </Button>
-          ) : (
-            <Button 
-              onClick={() => navigate("/login")}
-              className="bg-quiz-primary hover:bg-quiz-primary/90 text-white"
-            >
-              Login to Play
-            </Button>
-          )}
+          <Button 
+            onClick={() => navigate("/login")}
+            className="bg-quiz-primary hover:bg-quiz-primary/90 text-white"
+          >
+            Login to Play
+          </Button>
         </header>
 
         {/* Hero Section */}
@@ -37,15 +35,13 @@ const Home = () => {
           <p className="text-xl text-gray-600 mb-8">
             Join our quiz platform where learning meets rewards. Challenge yourself with exciting quizzes and win amazing prizes!
           </p>
-          {!user && (
-            <Button 
-              onClick={() => navigate("/login")}
-              size="lg"
-              className="bg-quiz-secondary hover:bg-quiz-secondary/90 text-white"
-            >
-              Get Started
-            </Button>
-          )}
+          <Button 
+            onClick={() => navigate("/login")}
+            size="lg"
+            className="bg-quiz-secondary hover:bg-quiz-secondary/90 text-white"
+          >
+            Get Started
+          </Button>
         </section>
 
         {/* Features Grid */}
