@@ -112,8 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear any stored session data
-      await supabase.auth.clearSession();
+      setUser(null); // Clear user state
       
       // Show toast notification
       toast({
