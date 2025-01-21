@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-// 15 minutes of inactivity before auto logout
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
 interface AuthContextType {
@@ -24,45 +23,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   let inactivityTimer: NodeJS.Timeout;
 
   const resetInactivityTimer = () => {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
+    if (inactivityTimer) clearTimeout(inactivityTimer);
     if (user) {
       inactivityTimer = setTimeout(signOut, INACTIVITY_TIMEOUT);
     }
   };
 
   const createUserProfile = async (user: User) => {
-    const { error } = await supabase.from('profiles').insert({
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata.full_name || user.email?.split('@')[0],
-      referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-    });
-
-    if (error && error.code !== '23505') { // Ignore duplicate key errors
-      toast({
-        title: "Error",
-        description: "Failed to create user profile",
-        variant: "destructive",
+    try {
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata.full_name || user.email?.split('@')[0],
+        referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
       });
+
+      if (error && error.code !== '23505') {
+        console.error('Profile creation error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create user profile",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Profile creation error:', error);
     }
   };
 
   useEffect(() => {
-    // Set up activity listeners
+    const setupAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+          await createUserProfile(session.user);
+          resetInactivityTimer();
+        }
+      } catch (error) {
+        console.error('Auth setup error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setupAuth();
+
     const events = ['mousedown', 'keydown', 'touchstart', 'mousemove'];
     events.forEach(event => {
       document.addEventListener(event, resetInactivityTimer);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        createUserProfile(session.user);
-        resetInactivityTimer();
-      }
-      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -91,14 +100,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
 
-    if (error) {
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign in error:', error);
       toast({
         title: "Error",
         description: "Failed to sign in with Google",
@@ -109,20 +121,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      setUser(null); // Clear user state
-      
-      // Show toast notification
+      await supabase.auth.signOut();
+      setUser(null);
       toast({
         title: "Signed out",
         description: "You have been successfully signed out",
       });
-      
-      // Navigate to login page
       navigate('/login');
     } catch (error) {
+      console.error('Sign out error:', error);
       toast({
         title: "Error",
         description: "Failed to sign out",
@@ -131,9 +138,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
